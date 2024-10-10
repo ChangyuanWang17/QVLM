@@ -1,0 +1,1 @@
+CUDA_VISIBLE_DEVICES=5 python -m llava.serve.model_worker --host 114.113.235.27 --controller http://localhost:10000 --port 22 --model-path pretrain/llava-13B-int --load-4bit
