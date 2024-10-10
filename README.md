@@ -49,4 +49,5 @@ Please check out the documentation [here](https://github.com/haotian-liu/LLaVA/b
 ## Acknowledgement
 We thank the authors of following works for opening source their excellent codes.
 - [LLaVA](https://github.com/haotian-liu/LLaVA)
+- [bitsandbytes](https://github.com/bitsandbytes-foundation/bitsandbytes)
 
