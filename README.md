@@ -5,16 +5,16 @@
 
 ## Install
 
-1. Clone this repository and navigate to LLaVA folder
+1. Clone this repository and navigate to QVLM folder
 ```bash
-git clone https://github.com/haotian-liu/LLaVA.git
+git clone https://github.com/ChangyuanWang17/QVLM.git
 cd QVLM
 ```
 
 2. Install Package
 ```Shell
-conda create -n llava python=3.10 -y
-conda activate llava
+conda create -n QVLM python=3.10 -y
+conda activate QVLM
 pip install --upgrade pip  # enable PEP 660 support
 pip install -e .
 ```
@@ -38,8 +38,8 @@ sh scripts/generate_sqa_response_multi.sh
 sh scripts/evaluate_sqa_response_multi.sh
 ```
 
-## Pretrained LLaVA Weights
-Please check out our [Model Zoo](https://github.com/haotian-liu/LLaVA/blob/main/docs/MODEL_ZOO.md) for all public LLaVA checkpoints, and the instructions of how to use the weights.
+## Pretrained LVLM Weights
+Please check out [Model Zoo](https://github.com/haotian-liu/LLaVA/blob/main/docs/MODEL_ZOO.md) for all public LLaVA checkpoints, and the instructions of how to use the weights.
 
 ## ScienceQA
 
