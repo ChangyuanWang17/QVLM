@@ -2,6 +2,9 @@
 
 *Efficient and accurate memory saving method towards W4A4 large multi-modal models.* [[Paper](https://arxiv.org/abs/2410.08119)]
 
+> Q-VLM: Post-training Quantization for Large Vision-Language Models  
+> [Changyuan Wang](https://changyuanwang17.github.io), [Ziwei Wang](https://ziweiwangthu.github.io), [Xiuwei Xu](https://xuxw98.github.io/), [Yansong Tang](https://andytang15.github.io), [Jie Zhou](https://scholar.google.com/citations?user=6a79aPwAAAAJ&hl=en&authuser=1), [Jiwen Lu](http://ivg.au.tsinghua.edu.cn/Jiwen_Lu/)
+
 
 ## Install
 
