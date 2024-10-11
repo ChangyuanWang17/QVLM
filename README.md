@@ -1,6 +1,6 @@
 # [NeurIPS'24]Q-VLM: Post-training Quantization for Large Vision-Language Models
 
-*Efficient and accurate memory saving method towards W4A4 large multi-modal models.* [[Paper](https://arxiv.org/abs/)]
+*Efficient and accurate memory saving method towards W4A4 large multi-modal models.* [[Paper](https://arxiv.org/abs/2410.08119)]
 
 
 ## Install
