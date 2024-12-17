@@ -29,7 +29,9 @@ from .quant_utils import *
 import sys
 
 last_layer_entropy = 0
+last_layer_distribution = torch.Tensor(np.zeros([1,100,4096])).cuda()
 llama_entropy = []
+llama_distribution = []
 
 class QuantAct(Module):
     """
@@ -70,8 +72,8 @@ class QuantAct(Module):
             self.llama_range_max = torch.Tensor(self.init_range * np.zeros(self.dim)).cuda()
         else:
             # CLIP calibrate search
-            # CLIP_row_dim = 257 # v1.3
-            CLIP_row_dim = 577 # v1.5 (position_embedding): Embedding(577, 1024)
+            CLIP_row_dim = 257 # v1.3
+            # CLIP_row_dim = 577 # v1.5 (position_embedding): Embedding(577, 1024)
             self.CLIP_range_min = torch.Tensor(-self.init_range * np.zeros(CLIP_row_dim)).cuda()
             self.CLIP_range_max = torch.Tensor(self.init_range * np.zeros(CLIP_row_dim)).cuda()
 
@@ -106,22 +108,38 @@ class QuantAct(Module):
             new_quant_x_1 = 0.5 * ((-new_quant_x - n).abs() - (new_quant_x - (n - 1)).abs() - 1)
             quant_act = (new_quant_x_1 + zero_point) / scale
             return quant_act.transpose(1,-1)
+
+    
+    def compute_DED(self, p_k, p_k1):
+        """
+        calcuate D(k, {k+1}) = -sum_ij p(x_{q,ij}^{(k)}, x_{q,ij}^{(k+1)}) log p(x_{q,ij}^{(k+1)} | x_{q,ij}^{(k)})
+        """
+        p_k = F.normalize(p_k, p=1, dim=1)  
+        p_k1 = F.normalize(p_k1, p=1, dim=1)  
+        
+        joint_p = p_k * p_k1  
+        joint_p = joint_p / joint_p.sum(dim=1, keepdim=True)  
+        condition_p = p_k1 / (p_k + 1e-5)  
+        condition_p = condition_p / condition_p.sum(dim=1, keepdim=True)
+        # print(joint_p, condition_p)
+        return -1 * torch.sum(joint_p * torch.log(condition_p + 1e-5), dim=1).mean()
     
     def cal_entropy(self, attn):
         attn = torch.nn.functional.normalize(attn, dim=1)
-        # print(attn.shape)
+        # print(attn.shape, self.count_block, self.count_layer)
         return -1 * torch.sum((attn * torch.log(attn+1e-7)), dim=1).mean()
     
     def search_strategy_judge(self):
         self.sample_num += 1
-        global last_layer_entropy
-        if last_layer_entropy >= 37 or self.count_block % 3 == 1:
+        global last_layer_entropy, llama_entropy
+        if last_layer_entropy >= np.mean(llama_entropy) or self.count_block % 3 == 1:
             search_flag = True
         else:
             search_flag = False
 
         if (self.count_block == 1 and self.count_layer == 1) or self.sample_num <= 1:
             search_flag = True
+            llama_entropy = []
 
         return search_flag
 
@@ -138,8 +156,15 @@ class QuantAct(Module):
                 self.llama_range_max += -self.llama_range_max + torch.max(self.llama_range_max, x_max)
 
             quant_act = self.quantization(inputs, self.llama_range_min, self.llama_range_max)
-            global last_layer_entropy
-            last_layer_entropy = self.cal_entropy(quant_act.abs())
+            global last_layer_entropy, last_layer_distribution
+            if self.count_layer == 1 or self.count_layer == 7:
+                last_layer_entropy = self.cal_entropy(quant_act.abs())
+            else:
+                last_layer_entropy = self.compute_DED(last_layer_distribution, quant_act.abs())
+            last_layer_distribution = quant_act.abs()
+            if not np.isnan(last_layer_entropy.item()):
+                llama_entropy.append(last_layer_entropy.item())
+            # print("last_layer_entropy", last_layer_entropy, self.count_block, self.count_layer)
 
             return quant_act
         else:
@@ -149,6 +174,7 @@ class QuantAct(Module):
             # in-place operation used on multi-gpus
             self.CLIP_range_min += -self.CLIP_range_min + torch.min(self.CLIP_range_min, x_min)
             self.CLIP_range_max += -self.CLIP_range_max + torch.max(self.CLIP_range_max, x_max)
+            # print(self.CLIP_range_min, self.CLIP_range_max)
             quant_act = self.quantization(inputs, self.CLIP_range_min , self.CLIP_range_max)
             return quant_act
     
@@ -158,18 +184,26 @@ class QuantAct(Module):
         """
         percentile = 0.9997
         inputs_calibrate = x.data
+        # print(self._calibrate)
         if self._calibrate:
             if inputs_calibrate.shape[1] == 1:
                 return x
             else:
-                global llama_entropy
+                global llama_entropy, llama_distribution
+                # print(self.first_search)
                 if self.search and self.first_search:
                     self.first_search = False
                     if self.llama_layer:
-                        quant_act = self.quantization(inputs_calibrate, self.llama_range_min, self.llama_range_max)
+                        # quant_act = self.quantization(inputs_calibrate, self.llama_range_min, self.llama_range_max)
+                        quant_act = self.calibrate_quantization(inputs_calibrate)
+                        llama_distribution.append(quant_act)
                         entropy = self.cal_entropy(quant_act.abs()).item()
                         if not np.isnan(entropy):
                             llama_entropy.append(entropy)
+                    else:
+                        quant_act = self.calibrate_quantization(inputs_calibrate)
+                        return quant_act
+
 
                 elif self.search and self.llama_layer == True and self.first_search == False:
                     best_score = 1e+10
