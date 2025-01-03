@@ -42,7 +42,9 @@ sh scripts/evaluate_sqa_response_multi.sh
 ```
 
 ## Pretrained LVLM Weights
-Please check out [Model Zoo](https://github.com/haotian-liu/LLaVA/blob/main/docs/MODEL_ZOO.md) for all public LLaVA checkpoints, and the instructions of how to use the weights.
+Please check out [Model Zoo](https://github.com/haotian-liu/LLaVA/blob/main/docs/MODEL_ZOO.md) for all public LLaVA checkpoints, and the instructions of how to use the weights. Thanks for LLaVA (https://github.com/haotian-liu/LLaVA) for the amazing open-source model!
+
+We also uploaded [LLaVA-v1.3-7B](https://huggingface.co/ChangyuanWang/LLaVA-vicuna-7B-v1.3-ScienceQA) model finetuned on ScienceQA dataset to test the effect of quantization.
 
 ## ScienceQA
 
